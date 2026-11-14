@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Карточки английских слов</title>
+<style>
+:root {
+  --bg: #f4f1ff;
+  --card: #ffffff;
+  --text: #1d1a2e;
+  --muted: #6b6785;
+  --accent: #6c4cf5;
+  --soft: #e9e4ff;
+  --wrong-bg: #fde8e8;
+  --wrong-tx: #b42318;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15131f;
+    --card: #221f33;
+    --text: #f2efff;
+    --muted: #a29ec0;
+    --accent: #8b74ff;
+    --soft: #2d2945;
+    --wrong-bg: #3a1f25;
+    --wrong-tx: #ffb4ab;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15131f;
+  --card: #221f33;
+  --text: #f2efff;
+  --muted: #a29ec0;
+  --accent: #8b74ff;
+  --soft: #2d2945;
+  --wrong-bg: #3a1f25;
+  --wrong-tx: #ffb4ab;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.app {
+  max-width: 460px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+h1 { font-size: 1.3rem; margin: 4px 0 10px; }
+.field {
+  width: 100%;
+  font: inherit;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--soft);
+  background: var(--card);
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.tabs { display: flex; gap: 8px; margin: 12px 0 4px; }
+.tab {
+  flex: 1;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 4px;
+  background: var(--soft);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab.on { background: var(--accent); color: #fff; }
+.box {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
+}
+.section-title { font-weight: 700; margin: 8px 0 10px; }
+.msg { color: var(--muted); font-size: .9rem; min-height: 1.3em; margin-top: 4px; }
+.sub { color: var(--muted); font-size: .9rem; margin: 0; }
+.small { font-size: .8rem; color: var(--muted); }
+.big { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+.stats-row { display: flex; justify-content: space-between; color: var(--muted); font-size: .9rem; margin: 14px 0 8px; }
+.bar { height: 8px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+
+.scene { perspective: 1200px; margin: 16px 0 12px; }
+.card {
+  position: relative;
+  width: 100%;
+  min-height: 320px;
+  transform-style: preserve-3d;
+  transition: transform .5s;
+  cursor: pointer;
+}
+.card.flipped { transform: rotateY(180deg); }
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--card);
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.back { transform: rotateY(180deg); }
+.label { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; }
+.word { font-size: clamp(2rem, 9vw, 2.8rem); font-weight: 700; word-break: break-word; }
+.ru { font-size: 1.8rem; font-weight: 700; color: var(--accent); word-break: break-word; }
+.ex { font-size: 1.1rem; line-height: 1.4; }
+.exru { color: var(--muted); font-size: .95rem; }
+.hint { color: var(--muted); font-size: .85rem; }
+.badge {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: var(--soft);
+  color: var(--accent);
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.sound {
+  border: 0;
+  border-radius: 99px;
+  background: var(--soft);
+  color: var(--text);
+  padding: 10px 18px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.row { display: flex; gap: 10px; margin-top: 10px; }
+.btn {
+  flex: 1;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.box > .btn { display: block; width: 100%; margin-top: 8px; }
+.ghost { background: var(--soft); color: var(--text); }
+.wrong { background: var(--wrong-bg); color: var(--wrong-tx); }
+.right { background: var(--accent); color: #fff; }
+.link {
+  display: block;
+  margin: 16px auto 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  padding: 8px;
+}
+.box > .link { margin: 8px 0 0; }
+
+.end {
+  margin-top: 20px;
+  background: var(--card);
+  border-radius: 24px;
+  padding: 28px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+  text-align: center;
+}
+.end h2 { margin: 0 0 8px; font-size: 1.4rem; }
+.end p { color: var(--muted); margin: 0 0 14px; }
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.txt { min-width: 0; overflow-wrap: anywhere; }
+.del {
+  border: 0;
+  background: var(--wrong-bg);
+  color: var(--wrong-tx);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.grid3 .box { margin: 0; padding: 12px 6px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Карточки английских слов</h1>
+  <select id="deckSel" class="field" aria-label="Колода"></select>
+
+  <nav class="tabs">
+    <button class="tab" data-tab="study">Учить</button>
+    <button class="tab" data-tab="words">Слова</button>
+    <button class="tab" data-tab="stats">Статистика</button>
+  </nav>
+
+  <section id="panel-study">
+    <div id="noWords" class="box" hidden>
+      <p class="sub">В этой колоде пока нет слов.</p>
+      <button id="goWords" class="btn ghost">Добавить слова</button>
+    </div>
+
+    <div id="studyBox">
+      <div class="stats-row"><span id="counter"></span><span id="known"></span></div>
+      <div class="bar"><div id="fill" class="fill"></div></div>
+
+      <div id="scene" class="scene">
+        <div id="card" class="card">
+          <div class="face front">
+            <span id="badge" class="badge" hidden>✓ знаете</span>
+            <div class="label">English</div>
+            <div id="en" class="word"></div>
+            <button id="sound" class="sound">🔊 Послушать</button>
+            <div class="hint">Нажмите, чтобы перевернуть</div>
+          </div>
+          <div class="face back">
+            <div class="label">Перевод</div>
+            <div id="ru" class="ru"></div>
+            <div id="ex" class="ex"></div>
+            <div id="exru" class="exru"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="controls">
+        <div class="row">
+          <button id="prev" class="btn ghost">← Назад</button>
+          <button id="skip" class="btn ghost">Пропустить →</button>
+        </div>
+        <div class="row">
+          <button id="learn" class="btn wrong">✗ Ещё учу</button>
+          <button id="know" class="btn right">✓ Знаю</button>
+        </div>
+      </div>
+
+      <div id="end" class="end" hidden>
+        <h2>Колода закончилась</h2>
+        <p id="endText"></p>
+        <div class="row"><button id="again" class="btn right">Повторить непонятные</button></div>
+        <div class="row"><button id="restart" class="btn ghost">Сбросить и начать заново</button></div>
+      </div>
+
+      <button id="shuffle" class="link">🔀 Перемешать</button>
+    </div>
+  </section>
+
+  <section id="panel-words" hidden>
+    <div class="box">
+      <p id="wordsTitle" class="section-title"></p>
+      <div id="wordList"></div>
+    </div>
+
+    <div class="box">
+      <p class="section-title">Добавить слово</p>
+      <input id="newEn" class="field" placeholder="Слово на английском" autocomplete="off">
+      <input id="newRu" class="field" placeholder="Перевод на русский" autocomplete="off">
+      <button id="addWordBtn" class="btn right">Добавить</button>
+      <div id="wordMsg" class="msg"></div>
+    </div>
+
+    <div class="box">
+      <p class="section-title">Новая колода</p>
+      <input id="newDeck" class="field" placeholder="Название, например «Работа»" autocomplete="off">
+      <button id="addDeckBtn" class="btn ghost">Создать колоду</button>
+      <button id="delDeck" class="link" hidden>Удалить эту колоду</button>
+    </div>
+  </section>
+
+  <section id="panel-stats" hidden>
+    <div class="grid3">
+      <div class="box"><div id="sumToday" class="big">0</div><div class="small">сегодня</div></div>
+      <div class="box"><div id="sumAll" class="big">0</div><div class="small">всего ответов</div></div>
+      <div class="box"><div id="sumStreak" class="big">0</div><div class="small">дней подряд</div></div>
+    </div>
+    <p class="section-title">По колодам</p>
+    <div id="deckStats"></div>
+    <button id="resetDeck" class="btn wrong">Сбросить прогресс</button>
+  </section>
+</div>
+
+<script>
+const KEY = "flashcards-app-v1";
+
+const BASE = [
+  { en: "hello", ru: "привет", ex: "Hello, my friend!", exRu: "Привет, мой друг!" },
+  { en: "book", ru: "книга", ex: "I like this book.", exRu: "Мне нравится эта книга." },
+  { en: "house", ru: "дом", ex: "Our house is big.", exRu: "Наш дом большой." },
+  { en: "water", ru: "вода", ex: "Can I have some water?", exRu: "Можно мне немного воды?" },
+  { en: "friend", ru: "друг", ex: "She is my best friend.", exRu: "Она мой лучший друг." },
+  { en: "school", ru: "школа", ex: "I go to school every day.", exRu: "Я хожу в школу каждый день." },
+  { en: "family", ru: "семья", ex: "My family is big.", exRu: "Моя семья большая." },
+  { en: "happy", ru: "счастливый", ex: "I am very happy today.", exRu: "Сегодня я очень счастлив(а)." },
+  { en: "big", ru: "большой", ex: "The dog is big.", exRu: "Собака большая." },
+  { en: "small", ru: "маленький", ex: "The cat is small.", exRu: "Кошка маленькая." },
+  { en: "go", ru: "идти, ехать", ex: "Let's go home.", exRu: "Пойдём домой." },
+  { en: "eat", ru: "есть, кушать", ex: "We eat dinner at seven.", exRu: "Мы ужинаем в семь." },
+  { en: "sleep", ru: "спать", ex: "I sleep at night.", exRu: "Я сплю ночью." },
+  { en: "work", ru: "работать", ex: "My mom works in an office.", exRu: "Моя мама работает в офисе." },
+  { en: "money", ru: "деньги", ex: "I have no money.", exRu: "У меня нет денег." },
+  { en: "time", ru: "время", ex: "What time is it?", exRu: "Который сейчас час?" },
+  { en: "day", ru: "день", ex: "Have a nice day!", exRu: "Хорошего дня!" },
+  { en: "night", ru: "ночь", ex: "Good night!", exRu: "Спокойной ночи!" },
+  { en: "morning", ru: "утро", ex: "Good morning!", exRu: "Доброе утро!" },
+  { en: "city", ru: "город", ex: "I live in a big city.", exRu: "Я живу в большом городе." },
+  { en: "car", ru: "машина", ex: "My dad has a red car.", exRu: "У моего папы красная машина." },
+  { en: "road", ru: "дорога", ex: "The road is long.", exRu: "Дорога длинная." },
+  { en: "cat", ru: "кошка", ex: "The cat is sleeping.", exRu: "Кошка спит." },
+  { en: "dog", ru: "собака", ex: "My dog likes to run.", exRu: "Моя собака любит бегать." },
+  { en: "food", ru: "еда", ex: "This food is delicious.", exRu: "Эта еда очень вкусная." },
+  { en: "weather", ru: "погода", ex: "The weather is nice today.", exRu: "Сегодня хорошая погода." },
+  { en: "love", ru: "любить", ex: "I love music.", exRu: "Я люблю музыку." },
+  { en: "learn", ru: "учить, учиться", ex: "I learn English every day.", exRu: "Я учу английский каждый день." },
+  { en: "think", ru: "думать", ex: "I think so.", exRu: "Я так думаю." },
+  { en: "thank you", ru: "спасибо", ex: "Thank you very much!", exRu: "Большое спасибо!" }
+];
+
+const $ = id => document.getElementById(id);
+const speakOK = "speechSynthesis" in window;
+
+/* ---------- данные и сохранение ---------- */
+
+function todayKey(d = new Date()) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function defaultState() {
+  return {
+    decks: [{ id: "base", name: "Базовые 30 слов", builtin: true, words: BASE.map(w => ({ ...w })) }],
+    active: "base",
+    known: {},
+    history: {}
+  };
+}
+
+function loadState() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (d && Array.isArray(d.decks) && d.decks.length) return d;
+  } catch (e) {}
+  return defaultState();
+}
+
+let S = loadState();
+
+function saveState() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+}
+
+function deck() {
+  return S.decks.find(d => d.id === S.active) || S.decks[0];
+}
+
+function knownSet(d = deck()) {
+  return new Set(S.known[d.id] || []);
+}
+
+function countKnown(d) {
+  const set = knownSet(d);
+  return d.words.filter(w => set.has(w.en)).length;
+}
+
+function setKnown(en, on) {
+  const d = deck();
+  const set = knownSet(d);
+  if (on) set.add(en); else set.delete(en);
+  S.known[d.id] = [...set];
+}
+
+function logAnswer() {
+  const k = todayKey();
+  S.history[k] = (S.history[k] || 0) + 1;
+}
+
+function streak() {
+  const d = new Date();
+  if (!S.history[todayKey(d)]) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (S.history[todayKey(d)] > 0) {
+    n++;
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function speak(text) {
+  if (!speakOK) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+/* ---------- вкладка «Учить» ---------- */
+
+let order = [];
+let pos = 0;
+let flipped = false;
+
+function setFlip(v) {
+  flipped = v;
+  $("card").classList.toggle("flipped", v);
+}
+
+function startRound(list) {
+  order = shuffle(list || deck().words);
+  pos = 0;
+  setFlip(false);
+  renderAll();
+}
+
+function renderStudy() {
+  const d = deck();
+  const empty = d.words.length === 0;
+  $("noWords").hidden = !empty;
+  $("studyBox").hidden = empty;
+  if (empty) return;
+
+  const done = pos >= order.length;
+  $("controls").hidden = done;
+  $("scene").hidden = done;
+  $("end").hidden = !done;
+  $("shuffle").hidden = done;
+
+  const kn = countKnown(d);
+  $("known").textContent = `Знаю: ${kn} из ${d.words.length}`;
+  $("fill").style.width = (order.length ? pos / order.length * 100 : 0) + "%";
+
+  if (done) {
+    const left = d.words.length - kn;
+    $("counter").textContent = `Готово: ${order.length} из ${order.length}`;
+    $("endText").textContent = left
+      ? `Пока не выучили: ${left}. Можно повторить только их.`
+      : "Все слова в колоде выучены! 🎉";
+    $("again").hidden = left === 0;
+    return;
+  }
+
+  const w = order[pos];
+  setFlip(false);
+  $("counter").textContent = `Карточка ${pos + 1} из ${order.length}`;
+  $("en").textContent = w.en;
+  $("ru").textContent = w.ru;
+  $("ex").textContent = w.ex || "";
+  $("exru").textContent = w.exRu || "";
+  $("badge").hidden = !knownSet(d).has(w.en);
+}
+
+function answer(isKnown) {
+  const w = order[pos];
+  setKnown(w.en, isKnown);
+  logAnswer();
+  saveState();
+  pos++;
+  renderAll();
+}
+
+/* ---------- вкладка «Слова» ---------- */
+
+function renderWords() {
+  const d = deck();
+  $("wordsTitle").textContent = `Слова: ${d.name} (${d.words.length})`;
+  $("delDeck").hidden = d.builtin;
+
+  const list = $("wordList");
+  list.textContent = "";
+  if (!d.words.length) {
+    const p = document.createElement("p");
+    p.className = "sub";
+    p.textContent = "Пока пусто. Добавьте первое слово ниже.";
+    list.appendChild(p);
+  }
+  d.words.forEach((w, i) => {
+    const row = document.createElement("div");
+    row.className = "item";
+    const txt = document.createElement("div");
+    txt.className = "txt";
+    const en = document.createElement("b");
+    en.textContent = w.en;
+    txt.append(en, document.createTextNode(" — " + w.ru));
+    const del = document.createElement("button");
+    del.className = "del";
+    del.textContent = "×";
+    del.setAttribute("aria-label", "Удалить слово");
+    del.addEventListener("click", () => removeWord(i));
+    row.append(txt, del);
+    list.appendChild(row);
+  });
+}
+
+function addWord() {
+  const en = $("newEn").value.trim();
+  const ru = $("newRu").value.trim();
+  const d = deck();
+  const msg = $("wordMsg");
+  if (!en || !ru) {
+    msg.textContent = "Заполните оба поля.";
+    return;
+  }
+  if (d.words.some(w => w.en.toLowerCase() === en.toLowerCase())) {
+    msg.textContent = "Такое слово уже есть в этой колоде.";
+    return;
+  }
+  d.words.push({ en, ru });
+  saveState();
+  $("newEn").value = "";
+  $("newRu").value = "";
+  msg.textContent = "Слово добавлено ✓";
+  startRound();
+}
+
+function removeWord(i) {
+  const d = deck();
+  const en = d.words[i].en;
+  d.words.splice(i, 1);
+  S.known[d.id] = (S.known[d.id] || []).filter(x => x !== en);
+  saveState();
+  startRound();
+}
+
+function addDeck() {
+  const name = $("newDeck").value.trim();
+  if (!name) return;
+  const id = "d" + Date.now();
+  S.decks.push({ id, name, builtin: false, words: [] });
+  S.active = id;
+  $("newDeck").value = "";
+  saveState();
+  startRound();
+}
+
+let delArmed = null;
+function delDeck() {
+  const d = deck();
+  if (d.builtin) return;
+  const btn = $("delDeck");
+  if (delArmed !== d.id) {
+    delArmed = d.id;
+    btn.textContent = "Нажмите ещё раз, чтобы удалить";
+    setTimeout(() => {
+      if (delArmed === d.id) {
+        delArmed = null;
+        btn.textContent = "Удалить эту колоду";
+      }
+    }, 3000);
+    return;
+  }
+  S.decks = S.decks.filter(x => x.id !== d.id);
+  delete S.known[d.id];
+  S.active = "base";
+  delArmed = null;
+  btn.textContent = "Удалить эту колоду";
+  saveState();
+  startRound();
+}
+
+/* ---------- вкладка «Статистика» ---------- */
+
+function renderStats() {
+  const box = $("deckStats");
+  box.textContent = "";
+  S.decks.forEach(d => {
+    const kn = countKnown(d);
+    const total = d.words.length;
+    const card = document.createElement("div");
+    card.className = "box";
+    const name = document.createElement("div");
+    name.style.fontWeight = "600";
+    name.textContent = d.name;
+    const info = document.createElement("div");
+    info.className = "small";
+    info.style.margin = "4px 0 8px";
+    info.textContent = `Знаю ${kn} из ${total}`;
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    const fill = document.createElement("div");
+    fill.className = "fill";
+    fill.style.width = (total ? kn / total * 100 : 0) + "%";
+    bar.appendChild(fill);
+    card.append(name, info, bar);
+    box.appendChild(card);
+  });
+  $("sumToday").textContent = S.history[todayKey()] || 0;
+  $("sumAll").textContent = Object.values(S.history).reduce((a, b) => a + b, 0);
+  $("sumStreak").textContent = streak();
+  $("resetDeck").textContent = `Сбросить прогресс: ${deck().name}`;
+}
+
+/* ---------- общее ---------- */
+
+let tab = "study";
+
+function showTab(t) {
+  tab = t;
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  ["study", "words", "stats"].forEach(n => { $("panel-" + n).hidden = n !== t; });
+  renderAll();
+}
+
+function renderSelect() {
+  const sel = $("deckSel");
+  sel.textContent = "";
+  S.decks.forEach(d => {
+    const o = document.createElement("option");
+    o.value = d.id;
+    o.textContent = `${d.name} (${d.words.length})`;
+    sel.appendChild(o);
+  });
+  sel.value = deck().id;
+}
+
+function renderAll() {
+  renderSelect();
+  if (tab === "study") renderStudy();
+  if (tab === "words") renderWords();
+  if (tab === "stats") renderStats();
+}
+
+/* ---------- обработчики ---------- */
+
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+$("deckSel").addEventListener("change", e => {
+  S.active = e.target.value;
+  saveState();
+  startRound();
+});
+
+$("card").addEventListener("click", () => setFlip(!flipped));
+$("sound").addEventListener("click", e => {
+  e.stopPropagation();
+  if (order[pos]) speak(order[pos].en);
+});
+$("sound").hidden = !speakOK;
+
+$("know").addEventListener("click", () => answer(true));
+$("learn").addEventListener("click", () => answer(false));
+$("skip").addEventListener("click", () => { pos++; renderAll(); });
+$("prev").addEventListener("click", () => { if (pos > 0) pos--; renderAll(); });
+$("shuffle").addEventListener("click", () => startRound());
+$("again").addEventListener("click", () => {
+  const d = deck();
+  const kn = knownSet(d);
+  startRound(d.words.filter(w => !kn.has(w.en)));
+});
+$("restart").addEventListener("click", () => {
+  S.known[deck().id] = [];
+  saveState();
+  startRound();
+});
+
+$("goWords").addEventListener("click", () => showTab("words"));
+$("addWordBtn").addEventListener("click", addWord);
+$("addDeckBtn").addEventListener("click", addDeck);
+$("delDeck").addEventListener("click", delDeck);
+$("resetDeck").addEventListener("click", () => {
+  S.known[deck().id] = [];
+  saveState();
+  renderAll();
+});
+
+startRound();
+showTab("study");
+</script>
+</body>
+</html>
