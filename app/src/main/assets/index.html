@@ -24,7 +24,7 @@ main{padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 120px)}
 .panel>.title{margin:0 0 12px}
 .sub{margin:0 0 12px;color:var(--ov);font-size:14px;line-height:20px}
 .small{color:var(--ov);font-size:12px;line-height:16px}
-.msg{min-height:20px;margin-top:8px;color:var(--ov);font-size:14px}
+.msg{min-height:20px;margin-top:8px;color:var(--ov);font-size:14px;text-align:center}
 .meta{display:flex;justify-content:space-between;color:var(--ov);font-size:14px;margin:8px 4px 10px}
 .track{height:4px;border-radius:2px;background:var(--sch);overflow:hidden}
 .bar{height:100%;width:0;background:var(--primary);border-radius:2px;transition:width .3s}
@@ -103,9 +103,12 @@ main{padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 120px)}
             <div id="ru" class="ru"></div>
             <div id="ex" class="ex"></div>
             <div id="exru" class="exru"></div>
+            <button id="exSound" class="btn tonal"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>Послушать пример</button>
           </div>
         </div>
       </div>
+
+      <div id="voiceMsg" class="msg"></div>
 
       <div id="controls">
         <div class="row">
@@ -206,7 +209,7 @@ const BASE = [
 ];
 
 const $ = id => document.getElementById(id);
-const speakOK = "speechSynthesis" in window;
+const webSpeechOK = "speechSynthesis" in window;
 
 const todayKey = (d = new Date()) =>
   d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -260,13 +263,26 @@ function shuffle(a) {
   return a;
 }
 
-function speak(t) {
-  if (!speakOK) return;
+/* ---------- Озвучка ----------
+   Сначала пробуем голос телефона через мост из MainActivity.
+   Если его нет, пробуем встроенную озвучку браузера.
+   Возвращает true, если озвучка запущена. */
+function speak(text) {
+  if (window.AndroidTTS) {
+    try { AndroidTTS.speak(text); return true; } catch (e) {}
+  }
+  if (!webSpeechOK) return false;
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(t);
+  const u = new SpeechSynthesisUtterance(text);
   u.lang = "en-US";
   u.rate = 0.9;
   speechSynthesis.speak(u);
+  return true;
+}
+
+function say(text) {
+  const ok = speak(text);
+  $("voiceMsg").textContent = ok ? "" : "Озвучка недоступна. Нужна новая версия приложения.";
 }
 
 /* ---------- Учить ---------- */
@@ -311,11 +327,13 @@ function renderStudy() {
 
   const w = order[pos];
   setFlip(false);
+  $("voiceMsg").textContent = "";
   $("counter").textContent = `Карточка ${pos + 1} из ${order.length}`;
   $("en").textContent = w.en;
   $("ru").textContent = w.ru;
   $("ex").textContent = w.ex || "";
   $("exru").textContent = w.exRu || "";
+  $("exSound").hidden = !w.ex;
   $("badge").hidden = !knownSet(d).has(w.en);
 }
 
@@ -483,8 +501,8 @@ function renderAll() {
 document.querySelectorAll(".ni").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("deckSel").addEventListener("change", e => { S.active = e.target.value; saveState(); startRound(); });
 $("card").addEventListener("click", () => setFlip(!flipped));
-$("sound").addEventListener("click", e => { e.stopPropagation(); if (order[pos]) speak(order[pos].en); });
-$("sound").hidden = !speakOK;
+$("sound").addEventListener("click", e => { e.stopPropagation(); if (order[pos]) say(order[pos].en); });
+$("exSound").addEventListener("click", e => { e.stopPropagation(); if (order[pos] && order[pos].ex) say(order[pos].ex); });
 $("know").addEventListener("click", () => answer(true));
 $("learn").addEventListener("click", () => answer(false));
 $("skip").addEventListener("click", () => { pos++; renderAll(); });
