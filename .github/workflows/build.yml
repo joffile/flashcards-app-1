@@ -17,6 +17,10 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      ANDROID_HOME: /usr/lib/android-sdk
+      ANDROID_SDK_ROOT: /usr/lib/android-sdk
+
     steps:
       # 1. Клонирование репозитория
       - name: Checkout code
@@ -31,47 +35,60 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Установка Android SDK
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      # 4. Принятие лицензий Android SDK
-      - name: Accept Android SDK licenses
+      # 3. Установка необходимых компонентов Android SDK
+      - name: Install Android SDK components
         run: |
-          yes | sdkmanager --licenses || true
-          yes | sdkmanager --update || true
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME: /usr/lib/android-sdk
+          ANDROID_SDK_ROOT: /usr/lib/android-sdk
 
-      # 5. Создание local.properties с путём к SDK (критично для сборки)
+      # 4. Создание local.properties
       - name: Create local.properties
         run: |
-          echo "sdk.dir=${ANDROID_HOME}" > local.properties
-          echo "sdk.dir=${ANDROID_HOME}" > app/local.properties
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          echo "sdk.dir=/usr/lib/android-sdk" > local.properties
+          echo "sdk.dir=/usr/lib/android-sdk" > app/local.properties
 
-      # 6. Установка Gradle
+      # 5. Установка Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
           cache-read-only: false
 
+      # 6. Проверка структуры проекта (диагностика)
+      - name: Check project structure
+        run: |
+          echo "=== Root files ==="
+          ls -la
+          echo "=== App directory ==="
+          ls -la app/
+          echo "=== App src ==="
+          ls -la app/src/main/ 2>/dev/null || echo "app/src/main not found"
+          echo "=== Java sources ==="
+          find app/src -name "*.java" 2>/dev/null || echo "No Java files found"
+          echo "=== Layout files ==="
+          find app/src -name "*.xml" -path "*/layout/*" 2>/dev/null || echo "No layout files found"
+          echo "=== AndroidManifest ==="
+          find app/src -name "AndroidManifest.xml" 2>/dev/null || echo "No manifest found"
+          echo "=== build.gradle files ==="
+          find . -name "build.gradle" -o -name "build.gradle.kts" 2>/dev/null
+
       # 7. Сборка Debug APK
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace --info
+        run: gradle assembleDebug --no-daemon --stacktrace
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME: /usr/lib/android-sdk
+          ANDROID_SDK_ROOT: /usr/lib/android-sdk
 
       # 8. Сборка Release APK (без подписи)
       - name: Build Release APK (unsigned)
-        run: gradle assembleRelease --no-daemon --stacktrace --info
+        run: gradle assembleRelease --no-daemon --stacktrace
         continue-on-error: true
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME: /usr/lib/android-sdk
+          ANDROID_SDK_ROOT: /usr/lib/android-sdk
 
       # 9. Загрузка Debug APK как артефакт
       - name: Upload Debug APK artifact
