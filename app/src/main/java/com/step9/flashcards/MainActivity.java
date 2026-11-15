@@ -1,82 +1,181 @@
 package com.step9.flashcards;
 
-import android.app.Activity;
 import android.os.Bundle;
-import android.speech.tts.TextToSpeech;
-import android.webkit.JavascriptInterface;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import java.util.Locale;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 
-public class MainActivity extends Activity implements TextToSpeech.OnInitListener {
+import java.util.List;
 
-    private WebView webView;
-    private TextToSpeech tts;
-    private boolean ttsReady = false;
-    private String pendingText = null;
+public class MainActivity extends AppCompatActivity {
 
-    public class SpeechBridge {
-        @JavascriptInterface
-        public void speak(final String text) {
-            runOnUiThread(() -> doSpeak(text));
-        }
-    }
+    private static final String STATE_CURRENT_INDEX = "current_index";
+    private static final String STATE_SELECTED_LEVEL = "selected_level";
+    private static final String STATE_IS_REVEALED = "is_revealed";
+
+    private Spinner levelSpinner;
+    private TextView tvEnglish, tvTranscription, tvRussian, tvExampleEn, tvExampleRu, tvProgress, tvEmptyState;
+    private Button btnReveal, btnNext;
+    private CardView wordCard;
+
+    private List<Word> currentWordsList;
+    private int currentIndex = 0;
+    private boolean isRevealed = false;
+    private String currentLevel = "Все уровни";
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        tts = new TextToSpeech(this, this);
-
-        webView = new WebView(this);
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setAllowFileAccess(true);
-
-        webView.addJavascriptInterface(new SpeechBridge(), "AndroidTTS");
-        webView.loadUrl("file:///android_asset/index.html");
-        setContentView(webView);
-    }
-
-    @Override
-    public void onInit(int status) {
-        if (status == TextToSpeech.SUCCESS) {
-            tts.setLanguage(Locale.US);
-            tts.setSpeechRate(0.9f);
-            ttsReady = true;
-            if (pendingText != null) {
-                doSpeak(pendingText);
-                pendingText = null;
+        initViews();
+        setupSpinner();
+        
+        // Восстановление состояния после поворота экрана
+        if (savedInstanceState != null) {
+            currentIndex = savedInstanceState.getInt(STATE_CURRENT_INDEX, 0);
+            currentLevel = savedInstanceState.getString(STATE_SELECTED_LEVEL, "Все уровни");
+            isRevealed = savedInstanceState.getBoolean(STATE_IS_REVEALED, false);
+            
+            // Синхронизация спиннера с восстановленным уровнем
+            ArrayAdapter<CharSequence> adapter = (ArrayAdapter<CharSequence>) levelSpinner.getAdapter();
+            int position = adapter.getPosition(currentLevel);
+            if (position >= 0) {
+                levelSpinner.setSelection(position);
             }
+        } else {
+            loadWordsForLevel(currentLevel);
         }
     }
 
-    private void doSpeak(String text) {
-        if (tts == null) return;
-        if (!ttsReady) {
-            pendingText = text;
+    private void initViews() {
+        levelSpinner = findViewById(R.id.levelSpinner);
+        tvEnglish = findViewById(R.id.tvEnglish);
+        tvTranscription = findViewById(R.id.tvTranscription);
+        tvRussian = findViewById(R.id.tvRussian);
+        tvExampleEn = findViewById(R.id.tvExampleEn);
+        tvExampleRu = findViewById(R.id.tvExampleRu);
+        tvProgress = findViewById(R.id.tvProgress);
+        tvEmptyState = findViewById(R.id.tvEmptyState);
+        btnReveal = findViewById(R.id.btnReveal);
+        btnNext = findViewById(R.id.btnNext);
+        wordCard = findViewById(R.id.wordCard);
+
+        // Защита от NullPointerException при неправильных ID в XML
+        if (levelSpinner == null || tvEnglish == null || btnNext == null) {
+            throw new IllegalStateException("Один или несколько View не найдены. Проверьте activity_main.xml");
+        }
+
+        btnReveal.setOnClickListener(v -> toggleReveal());
+        btnNext.setOnClickListener(v -> showNextWord());
+    }
+
+    private void setupSpinner() {
+        List<String> levels = WordDataManager.getAvailableLevels();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
+                android.R.layout.simple_spinner_item, levels);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        levelSpinner.setAdapter(adapter);
+
+        levelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                currentLevel = parent.getItemAtPosition(position).toString();
+                currentIndex = 0; // Сброс индекса при смене уровня
+                isRevealed = false;
+                loadWordsForLevel(currentLevel);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Ничего не делаем
+            }
+        });
+    }
+
+    private void loadWordsForLevel(String level) {
+        currentWordsList = WordDataManager.getWordsByLevel(level);
+        updateUI();
+    }
+
+    private void toggleReveal() {
+        isRevealed = !isRevealed;
+        updateUI();
+    }
+
+    private void showNextWord() {
+        if (currentWordsList == null || currentWordsList.isEmpty()) {
             return;
         }
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "card");
-    }
 
-    @Override
-    protected void onDestroy() {
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();
+        currentIndex++;
+        // Защита от IndexOutOfBoundsException
+        if (currentIndex >= currentWordsList.size()) {
+            currentIndex = 0; // Зацикливание списка
+            Toast.makeText(this, "Вы прошли все слова этого уровня. Начинаем сначала.", Toast.LENGTH_SHORT).show();
         }
-        super.onDestroy();
+        
+        isRevealed = false;
+        updateUI();
     }
 
-    @Override
-    public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
+    private void updateUI() {
+        if (currentWordsList == null || currentWordsList.isEmpty()) {
+            wordCard.setVisibility(View.GONE);
+            btnNext.setVisibility(View.GONE);
+            tvProgress.setVisibility(View.GONE);
+            tvEmptyState.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        wordCard.setVisibility(View.VISIBLE);
+        btnNext.setVisibility(View.VISIBLE);
+        tvProgress.setVisibility(View.VISIBLE);
+        tvEmptyState.setVisibility(View.GONE);
+
+        // Дополнительная защита от выхода за границы (на случай ошибок в логике)
+        if (currentIndex < 0 || currentIndex >= currentWordsList.size()) {
+            currentIndex = 0;
+        }
+
+        Word currentWord = currentWordsList.get(currentIndex);
+
+        tvEnglish.setText(currentWord.getEnglish());
+        tvTranscription.setText(currentWord.getTranscription());
+        tvProgress.setText((currentIndex + 1) + " / " + currentWordsList.size() + " (" + currentWord.getLevel() + ")");
+
+        if (isRevealed) {
+            tvRussian.setVisibility(View.VISIBLE);
+            tvRussian.setText(currentWord.getRussian());
+            
+            tvExampleEn.setVisibility(View.VISIBLE);
+            tvExampleEn.setText(currentWord.getExampleEn());
+            
+            tvExampleRu.setVisibility(View.VISIBLE);
+            tvExampleRu.setText(currentWord.getExampleRu());
+            
+            btnReveal.setText("Скрыть перевод");
         } else {
-            super.onBackPressed();
+            tvRussian.setVisibility(View.GONE);
+            tvExampleEn.setVisibility(View.GONE);
+            tvExampleRu.setVisibility(View.GONE);
+            btnReveal.setText("Показать перевод");
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_CURRENT_INDEX, currentIndex);
+        outState.putString(STATE_SELECTED_LEVEL, currentLevel);
+        outState.putBoolean(STATE_IS_REVEALED, isRevealed);
     }
 }
