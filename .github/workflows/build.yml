@@ -31,23 +31,49 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Установка Gradle через официальный action (не требует gradlew в репозитории)
+      # 3. Установка Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 4. Принятие лицензий Android SDK
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses || true
+          yes | sdkmanager --update || true
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+
+      # 5. Создание local.properties с путём к SDK (критично для сборки)
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          echo "sdk.dir=${ANDROID_HOME}" > app/local.properties
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+
+      # 6. Установка Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
           cache-read-only: false
 
-      # 4. Сборка Debug APK
+      # 7. Сборка Debug APK
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace --info
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
-      # 5. Сборка Release APK (без подписи)
+      # 8. Сборка Release APK (без подписи)
       - name: Build Release APK (unsigned)
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: gradle assembleRelease --no-daemon --stacktrace --info
         continue-on-error: true
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
-      # 6. Загрузка Debug APK как артефакт
+      # 9. Загрузка Debug APK как артефакт
       - name: Upload Debug APK artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -56,7 +82,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 90
 
-      # 7. Загрузка Release APK как артефакт
+      # 10. Загрузка Release APK как артефакт
       - name: Upload Release APK artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -66,7 +92,7 @@ jobs:
           retention-days: 90
           fail-on-error: false
 
-      # 8. При создании релиза — прикрепляем APK к релизу
+      # 11. При создании релиза — прикрепляем APK к релизу
       - name: Upload APK to GitHub Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
