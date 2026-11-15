@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Как установить WordStreak</title>
+<style>
+:root{--bg:#2D2B4E;--sh1:#201E3B;--sh2:#3B3965;--acc:#7F78F2;--txt:#ECEAFF;--mut:#A9A6D4;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:400 16px/24px Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;padding:calc(env(safe-area-inset-top,0px) + 20px) 16px calc(env(safe-area-inset-bottom,0px) + 28px)}
+.wrap{max-width:460px;margin:0 auto}
+h1{font:700 28px/34px Roboto,system-ui,sans-serif;margin:8px 0 6px}
+.lead{color:var(--mut);margin:0 0 20px}
+h3{font:600 16px/22px Roboto,system-ui,sans-serif;margin:28px 4px 12px}
+.card{background:var(--bg);border-radius:24px;padding:18px;margin-bottom:16px;box-shadow:8px 8px 16px var(--sh1),-8px -8px 16px var(--sh2)}
+.step{display:flex;gap:14px;align-items:flex-start}
+.num{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:var(--acc);color:#fff;font:700 16px/36px Roboto,system-ui,sans-serif;text-align:center}
+.step h2{font:600 17px/24px Roboto,system-ui,sans-serif;margin:2px 0 4px}
+.step p{margin:0;color:var(--mut);font-size:15px;line-height:22px}
+.step code{color:var(--txt);font-size:14px}
+.btn{display:block;text-align:center;text-decoration:none;color:#fff;background:var(--acc);border-radius:20px;padding:16px;font:600 16px/22px Roboto,system-ui,sans-serif;margin:22px 0 8px;box-shadow:6px 6px 12px var(--sh1),-6px -6px 12px var(--sh2)}
+.small{font-size:14px;line-height:21px;color:var(--mut);margin:0 4px 8px}
+.tip{display:flex;gap:12px;margin-bottom:12px;color:var(--txt);font-size:15px;line-height:22px}
+.tip span{flex-shrink:0;color:var(--acc);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>WordStreak</h1>
+  <p class="lead">Карточки для изучения английских слов. Бесплатно. Установка занимает 2 минуты.</p>
+
+  <a class="btn" href="https://github.com/joffile/flashcards-app-1/releases">Открыть страницу загрузки</a>
+  <p class="small">Откроется список сборок. Самая верхняя — самая новая.</p>
+
+  <h3>Установка на Android</h3>
+
+  <div class="card"><div class="step"><div class="num">1</div><div>
+    <h2>Откройте страницу загрузки</h2>
+    <p>Нажмите синюю кнопку выше. Откройте эту страницу в Chrome.</p>
+  </div></div></div>
+
+  <div class="card"><div class="step"><div class="num">2</div><div>
+    <h2>Скачайте файл</h2>
+    <p>Нажмите на самую верхнюю сборку. Если файлов не видно, нажмите «Assets». Затем нажмите на <code>app-debug.apk</code>. Файл скачается.</p>
+  </div></div></div>
+
+  <div class="card"><div class="step"><div class="num">3</div><div>
+    <h2>Откройте скачанный файл</h2>
+    <p>Нажмите на уведомление о загрузке или откройте «Загрузки» в телефоне и нажмите на файл.</p>
+  </div></div></div>
+
+  <div class="card"><div class="step"><div class="num">4</div><div>
+    <h2>Разрешите установку</h2>
+    <p>Если телефон спросит про установку из Chrome, нажмите «Настройки», включите «Разрешить из этого источника» и вернитесь назад.</p>
+  </div></div></div>
+
+  <div class="card"><div class="step"><div class="num">5</div><div>
+    <h2>Установите</h2>
+    <p>Нажмите «Установить». Если появится предупреждение, нажмите «Всё равно установить». Телефон так предупреждает потому, что приложения нет в Google Play. Код приложения открыт, его можно посмотреть на GitHub.</p>
+  </div></div></div>
+
+  <div class="card"><div class="step"><div class="num">6</div><div>
+    <h2>Откройте WordStreak</h2>
+    <p>Нажмите «Открыть». Начните с колоды «Базовые 30 слов».</p>
+  </div></div></div>
+
+  <h3>Как учиться</h3>
+  <div class="card">
+    <div class="tip"><span>1</span><div>Занимайтесь 5–10 минут в день. Это лучше, чем раз в неделю по часу.</div></div>
+    <div class="tip"><span>2</span><div>Переверните карточку, чтобы увидеть перевод и пример.</div></div>
+    <div class="tip"><span>3</span><div>Нажмите «Послушать», и слово произнесётся.</div></div>
+    <div class="tip"><span>4</span><div>Знаете слово: нажмите «Знаю». Не знаете: «Ещё учу». В конце колоды повторите непонятные.</div></div>
+    <div class="tip"><span>5</span><div>Во вкладке «Статистика» видно, сколько дней подряд вы занимаетесь.</div></div>
+  </div>
+
+  <h3>Если что-то не работает</h3>
+  <div class="card"><p class="small" style="margin:0">Сделайте скриншот того места, где застряли, и отправьте автору приложения.</p></div>
+</div>
+</body>
+</html>
