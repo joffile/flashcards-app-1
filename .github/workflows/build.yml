@@ -24,38 +24,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 2. Настройка JDK 17 (актуально для современных версий Android Studio)
+      # 2. Настройка JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Кэширование Gradle для ускорения сборок
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
+      # 3. Установка Gradle через официальный action (не требует gradlew в репозитории)
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-version: wrapper
+          cache-read-only: false
 
-      # 4. Предоставление прав на запуск gradlew
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-
-      # 5. Сборка Debug APK
+      # 4. Сборка Debug APK
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: gradle assembleDebug --no-daemon --stacktrace
 
-      # 6. Сборка Release APK (без подписи — для тестирования)
+      # 5. Сборка Release APK (без подписи)
       - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease --no-daemon
+        run: gradle assembleRelease --no-daemon --stacktrace
         continue-on-error: true
 
-      # 7. Загрузка Debug APK как артефакт (доступен 90 дней)
+      # 6. Загрузка Debug APK как артефакт
       - name: Upload Debug APK artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -64,7 +56,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 90
 
-      # 8. Загрузка Release APK как артефакт (если сборка успешна)
+      # 7. Загрузка Release APK как артефакт
       - name: Upload Release APK artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -74,7 +66,7 @@ jobs:
           retention-days: 90
           fail-on-error: false
 
-      # 9. При создании релиза — прикрепляем APK к релизу
+      # 8. При создании релиза — прикрепляем APK к релизу
       - name: Upload APK to GitHub Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
