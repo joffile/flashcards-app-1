@@ -29,9 +29,48 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Diagnostics - project structure
+        run: |
+          echo "========== ROOT FILES =========="
+          ls -la
+          echo ""
+          echo "========== FULL TREE (depth 6) =========="
+          find . -maxdepth 6 -not -path './.git*' | sort
+          echo ""
+          echo "========== gradle.properties =========="
+          cat gradle.properties 2>/dev/null || echo "NOT FOUND - THIS IS THE PROBLEM!"
+          echo ""
+          echo "========== app/build.gradle =========="
+          cat app/build.gradle 2>/dev/null || echo "NOT FOUND"
+          echo ""
+          echo "========== AndroidManifest.xml =========="
+          cat app/src/main/AndroidManifest.xml 2>/dev/null || echo "NOT FOUND"
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        id: build
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-output.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Show FIRST 200 lines of build output
+        if: always()
+        run: |
+          echo "========== FIRST 200 LINES =========="
+          head -200 build-output.log
+          echo ""
+          echo "========== ERRORS =========="
+          grep -n -A 15 -E "FAILURE|What went wrong|error:|Error:|Caused by:" build-output.log | head -100 || echo "No errors found"
+
+      - name: Upload full build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build-output.log
+          retention-days: 7
 
       - name: Upload Debug APK
         if: success()
